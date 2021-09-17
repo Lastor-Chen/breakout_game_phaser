@@ -1,28 +1,63 @@
 // @ts-check
 import Phaser from 'phaser'
+import physicsConstants from '../config/physicsConstants'
+
+const ballKey = 'ball'
+const paddleKey = 'paddle'
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
     super('game-scene')
-    /** @type {HTMLCanvasElement} */
     this.canvas = null
+    this.ball = null
+    this.cursors = null
+    this.velocity = 0
   }
 
   preload() {
     this.canvas = this.sys.game.canvas
-    this.load.image('ball', '/img/ball.png')
+    this.load.image(ballKey, '/img/ball.png')
+    this.load.image(paddleKey, '/img/paddle.png')
   }
 
   create() {
     this.ball = this.createBall()
+    this.paddle = this.createPaddle()
+    this.physics.add.collider(this.ball, this.paddle)
+    // 綁定監聽 keyboard 事件到 cursors 屬性
+    this.cursors = this.input.keyboard.createCursorKeys()
   }
 
   update() {
+    // paddle movement
+    if (this.cursors.left.isDown) {
+      this.velocity -= physicsConstants.acceleration
+    } else if (this.cursors.right.isDown) {
+      this.velocity += physicsConstants.acceleration
+    } else {
+      if (this.velocity > 0) {
+        this.velocity -= physicsConstants.drag
+      } else {
+        this.velocity += physicsConstants.drag
+      }
+
+      // 防止飄移
+      if (this.velocity < (physicsConstants.drag * 1.1)) {
+        this.velocity = 0
+      }
+    }
+
+    // 限制 velocity 最大值
+    if (Math.abs(this.velocity) > physicsConstants.maxVelocity) {
+      this.velocity = physicsConstants.maxVelocity * Math.sign(this.velocity)
+    }
+
+    this.paddle.setVelocityX(this.velocity)
   }
 
   // ==========
   createBall() {
-    const ball = this.physics.add.sprite(this.canvas.width * 0.5, this.canvas.height - 25, 'ball')
+    const ball = this.physics.add.sprite(this.canvas.width * 0.5, this.canvas.height - 25, ballKey)
     // 設定能與 world bounds 發生碰撞
     ball.setCollideWorldBounds()
     // 設定彈力(撞到東西後的減速值), 1 保持原速
@@ -30,5 +65,17 @@ export default class GameScene extends Phaser.Scene {
     // 設定速度
     ball.setVelocity(150, -150)
     return ball
+  }
+
+  createPaddle() {
+    const posX = this.canvas.width * 0.5
+    const posY = this.canvas.height - 5
+    const paddle = this.physics.add.sprite(posX, posY, paddleKey).setOrigin(0.5, 1)
+    // 防止 paddle 離開 screen
+    paddle.setCollideWorldBounds()
+    // 使其不因被碰撞而移動
+    paddle.setImmovable()
+
+    return paddle
   }
 }
