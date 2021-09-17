@@ -24,8 +24,12 @@ export default class GameScene extends Phaser.Scene {
     this.ball = this.createBall()
     this.paddle = this.createPaddle()
     this.physics.add.collider(this.ball, this.paddle)
+
     // 綁定監聽 keyboard 事件到 cursors 屬性
     this.cursors = this.input.keyboard.createCursorKeys()
+
+    // 監聽 screen 碰撞事件
+    this.physics.world.on('worldbounds', this.detectBounds, this)
   }
 
   update() {
@@ -42,7 +46,7 @@ export default class GameScene extends Phaser.Scene {
       }
 
       // 防止飄移
-      if (this.velocity < (physicsConstants.drag * 1.1)) {
+      if (this.velocity < physicsConstants.drag * 1.1) {
         this.velocity = 0
       }
     }
@@ -58,8 +62,11 @@ export default class GameScene extends Phaser.Scene {
   // ==========
   createBall() {
     const ball = this.physics.add.sprite(this.canvas.width * 0.5, this.canvas.height - 25, ballKey)
-    // 設定能與 world bounds 發生碰撞
-    ball.setCollideWorldBounds()
+    ball.setOrigin(0.5)
+
+    // 設定能與 world bounds 發生碰撞, 彈力
+    // 參數 4 的 onWorldBounds, 允許碰撞時 emit event
+    ball.body.setCollideWorldBounds(true, 1, 1, true)
     // 設定彈力(撞到東西後的減速值), 1 保持原速
     ball.setBounce(1)
     // 設定速度
@@ -71,11 +78,26 @@ export default class GameScene extends Phaser.Scene {
     const posX = this.canvas.width * 0.5
     const posY = this.canvas.height - 5
     const paddle = this.physics.add.sprite(posX, posY, paddleKey).setOrigin(0.5, 1)
+
     // 防止 paddle 離開 screen
     paddle.setCollideWorldBounds()
     // 使其不因被碰撞而移動
     paddle.setImmovable()
 
     return paddle
+  }
+
+  /**
+   * @param {Phaser.Physics.Arcade.Body} body
+   * @param {boolean} up is碰到頂部
+   * @param {boolean} down is碰到底部
+   * @param {boolean} left is碰到左側
+   * @param {boolean} right is碰到右側
+   */
+  detectBounds(body, up, down, left, right) {
+    if (down) {
+      alert('game over!')
+      this.scene.stop()
+    }
   }
 }
