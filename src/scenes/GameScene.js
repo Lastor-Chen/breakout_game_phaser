@@ -1,6 +1,7 @@
 // @ts-check
 import Phaser from 'phaser'
 import physicsConstants from '../config/physicsConstants'
+import ScoreLabel from '../ui/ScoreLabel'
 
 const ballKey = 'ball'
 const paddleKey = 'paddle'
@@ -29,6 +30,7 @@ export default class GameScene extends Phaser.Scene {
     this.bricks = null
     this.cursors = null
     this.velocity = 0
+    this.scoreLabel = null
   }
 
   preload() {
@@ -47,6 +49,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.bricks = this.createBricks()
     this.physics.add.collider(this.ball, this.bricks, this.ballHitBrick)
+
+    this.scoreLabel = this.createScoreLabel(8, 8, 0)
 
     // 綁定監聽 keyboard 事件到 cursors 屬性
     this.cursors = this.input.keyboard.createCursorKeys()
@@ -124,6 +128,24 @@ export default class GameScene extends Phaser.Scene {
   }
 
   /**
+   * @param {number} x position x
+   * @param {number} y position y
+   * @param {number} score 
+   */
+  createScoreLabel(x, y, score) {
+    const scoreLabel = new ScoreLabel(this, x, y, score, {
+      fontSize: '20px',
+      fontFamily: 'Ariel',
+      strokeThickness: 1,
+      color: '#eee',
+      stroke: '#0095DD',
+    })
+    this.add.existing(scoreLabel)
+
+    return scoreLabel
+  }
+
+  /**
    * @param {Phaser.Physics.Arcade.Body} body
    * @param {boolean} up is碰到頂部
    * @param {boolean} down is碰到底部
@@ -147,5 +169,6 @@ export default class GameScene extends Phaser.Scene {
     /** @type {Phaser.Types.Physics.Arcade.SpriteWithDynamicBody} */
     (brick).disableBody(true, true)
     this.sound.play(brickHitKey)
+    this.scoreLabel.add(50)
   }
 }
