@@ -170,5 +170,10 @@ export default class GameScene extends Phaser.Scene {
     (brick).disableBody(true, true)
     this.sound.play(brickHitKey)
     this.scoreLabel.add(50)
+
+    if (this.bricks.countActive(true) === 0) {
+      alert('You won the game. Congratulations!!')
+      window.location.reload()
+    }
   }
 }
