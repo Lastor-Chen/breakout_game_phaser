@@ -1,7 +1,9 @@
 // @ts-check
 import Phaser from 'phaser'
 import physicsConstants from '../config/physicsConstants'
+import gameConstants from '../config/gameConstants'
 import ScoreLabel from '../ui/ScoreLabel'
+import LivesLabel from '../ui/LivesLabel'
 
 const ballKey = 'ball'
 const paddleKey = 'paddle'
@@ -31,6 +33,7 @@ export default class GameScene extends Phaser.Scene {
     this.cursors = null
     this.velocity = 0
     this.scoreLabel = null
+    this.livesLabel = null
   }
 
   preload() {
@@ -51,6 +54,7 @@ export default class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.ball, this.bricks, this.ballHitBrick)
 
     this.scoreLabel = this.createScoreLabel(8, 8, 0)
+    this.livesLabel = this.createLivesLabel(140, 8, gameConstants.startingLives)
 
     // 綁定監聽 keyboard 事件到 cursors 屬性
     this.cursors = this.input.keyboard.createCursorKeys()
@@ -141,8 +145,24 @@ export default class GameScene extends Phaser.Scene {
       stroke: '#0095DD',
     })
     this.add.existing(scoreLabel)
-
     return scoreLabel
+  }
+
+  /**
+   * @param {number} x position x
+   * @param {number} y position y
+   * @param {number} lives 
+   */
+  createLivesLabel(x, y, lives) {
+    const livesLabel = new LivesLabel(this, x, y, lives, {
+      fontSize: '20px',
+      fontFamily: 'Ariel',
+      strokeThickness: 1,
+      color: '#eee',
+      stroke: '#0095DD',
+    })
+    this.add.existing(livesLabel)
+    return livesLabel
   }
 
   /**
@@ -154,8 +174,16 @@ export default class GameScene extends Phaser.Scene {
    */
   detectBounds(body, up, down, left, right) {
     if (down) {
-      alert('game over!')
-      this.scene.pause()
+      this.livesLabel.removeLife()
+      if (this.livesLabel.isDead) {
+        alert('game over!')
+        window.location.reload()
+      } else {
+        this.resetBallPaddlePosition()
+        this.physics.pause()
+        // 末位參數指定 this scope
+        this.time.delayedCall(gameConstants.deathDelay, this.resumeGame, null, this)
+      }
     }
   }
 
@@ -169,11 +197,22 @@ export default class GameScene extends Phaser.Scene {
     /** @type {Phaser.Types.Physics.Arcade.SpriteWithDynamicBody} */
     (brick).disableBody(true, true)
     this.sound.play(brickHitKey)
-    this.scoreLabel.add(50)
+    this.scoreLabel.add(gameConstants.basePoints)
 
     if (this.bricks.countActive(true) === 0) {
       alert('You won the game. Congratulations!!')
       window.location.reload()
     }
+  }
+
+  resetBallPaddlePosition() {
+    const ballX = this.canvas.width * 0.5
+    const ballY = this.canvas.height - this.paddle.height - this.ball.height
+    this.ball.setPosition(ballX, ballY)
+    this.paddle.setPosition(this.canvas.width * 0.5, this.paddle.y)
+  }
+
+  resumeGame() {
+    this.physics.resume()
   }
 }
