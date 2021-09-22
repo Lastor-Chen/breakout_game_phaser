@@ -4,12 +4,27 @@ import physicsConstants from '../config/physicsConstants'
 
 const ballKey = 'ball'
 const paddleKey = 'paddle'
+const brickKey = 'brick'
+const brickInfo = {
+  width: 50,
+  height: 20,
+  count: {
+    row: 3,
+    col: 7,
+  },
+  offset: {
+    top: 50,
+    left: 60
+  },
+  padding: 10,
+}
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
     super('game-scene')
     this.canvas = null
     this.ball = null
+    this.bricks = null
     this.cursors = null
     this.velocity = 0
   }
@@ -18,12 +33,16 @@ export default class GameScene extends Phaser.Scene {
     this.canvas = this.sys.game.canvas
     this.load.image(ballKey, '/img/ball.png')
     this.load.image(paddleKey, '/img/paddle.png')
+    this.load.image(brickKey, '/img/brick.png')
   }
 
   create() {
     this.ball = this.createBall()
     this.paddle = this.createPaddle()
     this.physics.add.collider(this.ball, this.paddle)
+
+    this.bricks = this.createBricks()
+    this.physics.add.collider(this.ball, this.bricks, this.ballHitBrick)
 
     // 綁定監聽 keyboard 事件到 cursors 屬性
     this.cursors = this.input.keyboard.createCursorKeys()
@@ -87,6 +106,19 @@ export default class GameScene extends Phaser.Scene {
     return paddle
   }
 
+  createBricks() {
+    // 建立 bricks 的 static group
+    const bricks = this.physics.add.staticGroup()
+    for (let col = 0; col < brickInfo.count.col; col++) {
+      for (let row = 0; row < brickInfo.count.row; row++) {
+        const brickX = (brickInfo.width + brickInfo.padding) * col + brickInfo.offset.left
+        const brickY = (brickInfo.height + brickInfo.padding) * row + brickInfo.offset.top
+        bricks.create(brickX, brickY, brickKey)
+      }
+    }
+    return bricks
+  }
+
   /**
    * @param {Phaser.Physics.Arcade.Body} body
    * @param {boolean} up is碰到頂部
@@ -99,5 +131,11 @@ export default class GameScene extends Phaser.Scene {
       alert('game over!')
       this.scene.stop()
     }
+  }
+
+  /** @type {ArcadePhysicsCallback} */
+  ballHitBrick = (ball, brick) => {
+    /** @type {Phaser.Types.Physics.Arcade.SpriteWithDynamicBody} */
+    (brick).disableBody(true, true)
   }
 }
