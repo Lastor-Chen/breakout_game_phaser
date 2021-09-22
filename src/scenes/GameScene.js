@@ -18,6 +18,8 @@ const brickInfo = {
   },
   padding: 10,
 }
+const paddleHitKey = 'paddleHit'
+const brickHitKey = 'brickHit'
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -34,12 +36,14 @@ export default class GameScene extends Phaser.Scene {
     this.load.image(ballKey, '/img/ball.png')
     this.load.image(paddleKey, '/img/paddle.png')
     this.load.image(brickKey, '/img/brick.png')
+    this.load.audio(paddleHitKey, '/audio/114187__edgardedition__thud17.wav')
+    this.load.audio(brickHitKey, '/audio/478284__joao-janz__finger-tap-2-2.wav')
   }
 
   create() {
     this.ball = this.createBall()
     this.paddle = this.createPaddle()
-    this.physics.add.collider(this.ball, this.paddle)
+    this.physics.add.collider(this.ball, this.paddle, this.ballHitPaddle)
 
     this.bricks = this.createBricks()
     this.physics.add.collider(this.ball, this.bricks, this.ballHitBrick)
@@ -129,13 +133,19 @@ export default class GameScene extends Phaser.Scene {
   detectBounds(body, up, down, left, right) {
     if (down) {
       alert('game over!')
-      this.scene.stop()
+      this.scene.pause()
     }
+  }
+
+  /** @type {ArcadePhysicsCallback} */
+  ballHitPaddle = () => {
+    this.sound.play(paddleHitKey)
   }
 
   /** @type {ArcadePhysicsCallback} */
   ballHitBrick = (ball, brick) => {
     /** @type {Phaser.Types.Physics.Arcade.SpriteWithDynamicBody} */
     (brick).disableBody(true, true)
+    this.sound.play(brickHitKey)
   }
 }
