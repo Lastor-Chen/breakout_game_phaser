@@ -4,6 +4,7 @@ import physicsConstants from '../config/physicsConstants'
 import gameConstants from '../config/gameConstants'
 import ScoreLabel from '../ui/ScoreLabel'
 import LivesLabel from '../ui/LivesLabel'
+import ClearedLabel from '../ui/ClearedLabel'
 
 const ballKey = 'ball'
 const paddleKey = 'paddle'
@@ -34,6 +35,8 @@ export default class GameScene extends Phaser.Scene {
     this.velocity = 0
     this.scoreLabel = null
     this.livesLabel = null
+    this.clearedLabel = null
+    this.timesCleared = 0
   }
 
   preload() {
@@ -55,6 +58,9 @@ export default class GameScene extends Phaser.Scene {
 
     this.scoreLabel = this.createScoreLabel(8, 8, 0)
     this.livesLabel = this.createLivesLabel(140, 8, gameConstants.startingLives)
+    this.clearedLabel = this.createClearedLabel(240, 8, 0)
+
+    this.setBallVelocity()
 
     // 綁定監聽 keyboard 事件到 cursors 屬性
     this.cursors = this.input.keyboard.createCursorKeys()
@@ -101,7 +107,7 @@ export default class GameScene extends Phaser.Scene {
     // 設定彈力(撞到東西後的減速值), 1 保持原速
     ball.setBounce(1)
     // 設定速度
-    ball.setVelocity(150, -150)
+    ball.setMaxVelocity(physicsConstants.maxBallVelocity, physicsConstants.maxBallVelocity)
     return ball
   }
 
@@ -166,6 +172,29 @@ export default class GameScene extends Phaser.Scene {
   }
 
   /**
+   * @param {number} x position x
+   * @param {number} y position y
+   * @param {number} clearedNum 
+   */
+  createClearedLabel(x, y, clearedNum) {
+    const clearedLabel = new ClearedLabel(this, x, y, clearedNum, {
+      fontSize: '20px',
+      fontFamily: 'Ariel',
+      strokeThickness: 1,
+      color: '#eee',
+      stroke: '#0095DD',
+    })
+    this.add.existing(clearedLabel)
+
+    return clearedLabel
+  }
+
+  setBallVelocity() {
+    const multiplier = this.timesCleared > 0 ? Math.pow(physicsConstants.speedMultiplier, this.timesCleared) : 1
+    this.ball.setVelocity(150 * multiplier, -150 * multiplier)
+  }
+
+  /**
    * @param {Phaser.Physics.Arcade.Body} body
    * @param {boolean} up is碰到頂部
    * @param {boolean} down is碰到底部
@@ -193,15 +222,20 @@ export default class GameScene extends Phaser.Scene {
   }
 
   /** @type {ArcadePhysicsCallback} */
-  ballHitBrick = (ball, brick) => {
+  ballHitBrick = (ball, obj2) => {
     /** @type {Phaser.Types.Physics.Arcade.SpriteWithDynamicBody} */
-    (brick).disableBody(true, true)
+    const brick = (obj2)
+    brick.disableBody(true, true)
     this.sound.play(brickHitKey)
-    this.scoreLabel.add(gameConstants.basePoints)
 
+    // 計分
+    const multiplier = this.timesCleared > 0 ? gameConstants.clearMultiplier * this.timesCleared : 1
+    const pointValue = gameConstants.basePoints * multiplier
+    this.scoreLabel.add(pointValue)
+
+    // 判斷勝利
     if (this.bricks.countActive(true) === 0) {
-      alert('You won the game. Congratulations!!')
-      window.location.reload()
+      this.resetLevel()
     }
   }
 
@@ -214,5 +248,33 @@ export default class GameScene extends Phaser.Scene {
 
   resumeGame() {
     this.physics.resume()
+  }
+
+  resetLevel() {
+    // temporarily pause game
+    this.physics.pause()
+
+    // increased clearedNum value
+    // to cause increase in score value and ball speed
+    this.clearedLabel.addClear()
+    this.timesCleared += 1
+    this.setBallVelocity()
+
+    // reset gameObjects
+    this.resetBallPaddlePosition()
+    this.time.delayedCall(gameConstants.deathDelay, () => {
+      this.repopulateBricks()
+      this.resumeGame()
+    })
+  }
+
+  repopulateBricks() {
+    // respawn bricks
+    this.bricks.children.iterate((child) => {
+      /** @type {Phaser.Types.Physics.Arcade.SpriteWithDynamicBody} */
+      const brick = (child)
+      brick.enableBody(true, brick.x, brick.y, true, true)
+      brick.clearAlpha()
+    })
   }
 }
