@@ -23,6 +23,7 @@ class LivesLabel extends Phaser.GameObjects.Text {
     return this.lives < 1
   }
 
+  /** @param {number} lives */
   setLives(lives) {
     this.lives = lives
     this.setText(this.livesText)

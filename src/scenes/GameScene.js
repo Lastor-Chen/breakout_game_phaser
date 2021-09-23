@@ -19,12 +19,13 @@ const brickInfo = {
   },
   offset: {
     top: 50,
-    left: 60
+    left: 60,
   },
   padding: 10,
 }
 const paddleHitKey = 'paddleHit'
 const brickHitKey = 'brickHit'
+const buttonKey = 'button'
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -38,21 +39,23 @@ export default class GameScene extends Phaser.Scene {
     this.livesLabel = null
     this.clearedLabel = null
     this.timesCleared = 0
+    this.isPlaying = false
+    this.startButton = null
+    this.enterKey = null
   }
 
   preload() {
     this.canvas = this.sys.game.canvas
-    this.load.spritesheet(ballKey, '/img/wobble.png', {
-      frameWidth: 20,
-      frameHeight: 20,
-    })
+    this.load.spritesheet(ballKey, '/img/wobble.png', { frameWidth: 20, frameHeight: 20 })
     this.load.image(paddleKey, '/img/paddle.png')
     this.load.image(brickKey, '/img/brick.png')
+    this.load.spritesheet(buttonKey, '/img/button.png', { frameWidth: 120, frameHeight: 40 })
     this.load.audio(paddleHitKey, '/audio/114187__edgardedition__thud17.wav')
     this.load.audio(brickHitKey, '/audio/478284__joao-janz__finger-tap-2-2.wav')
   }
 
   create() {
+    this.startButton = this.createStartButton()
     this.ball = this.createBall()
     this.paddle = this.createPaddle()
     this.physics.add.collider(this.ball, this.paddle, this.ballHitPaddle)
@@ -64,16 +67,24 @@ export default class GameScene extends Phaser.Scene {
     this.livesLabel = this.createLivesLabel(140, 8, gameConstants.startingLives)
     this.clearedLabel = this.createClearedLabel(240, 8, 0)
 
-    this.setBallVelocity()
-
     // 綁定監聽 keyboard 事件到 cursors 屬性
     this.cursors = this.input.keyboard.createCursorKeys()
+    // start 控制監聽
+    this.startButton.on('pointerdown', this.startGame, this)
+    this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER)
 
     // 監聽 screen 碰撞事件
     this.physics.world.on('worldbounds', this.detectBounds, this)
   }
 
   update() {
+    // starting controller
+    const isSpaceDown = this.cursors.space.isDown
+    const isEnterDown = this.enterKey.isDown
+    if ((isSpaceDown || isEnterDown) && !this.isPlaying) {
+      this.startGame()
+    }
+
     // paddle movement
     if (this.cursors.left.isDown) {
       this.velocity -= physicsConstants.acceleration
@@ -97,10 +108,21 @@ export default class GameScene extends Phaser.Scene {
       this.velocity = physicsConstants.maxVelocity * Math.sign(this.velocity)
     }
 
-    this.paddle.setVelocityX(this.velocity)
+    if (this.isPlaying) {
+      this.paddle.setVelocityX(this.velocity)
+    } else if (this.paddle.body.velocity.x > 0) {
+      this.paddle.setVelocityX(0)
+    }
   }
 
   // ==========
+  createStartButton() {
+    const startButton = this.add.sprite(this.canvas.width * 0.5, this.canvas.height * 0.5, buttonKey)
+    // 允許 Input 互動事件
+    startButton.setInteractive()
+    return startButton
+  }
+
   createBall() {
     const ball = this.physics.add.sprite(this.canvas.width * 0.5, this.canvas.height - 25, ballKey)
     ball.setOrigin(0.5)
@@ -206,9 +228,27 @@ export default class GameScene extends Phaser.Scene {
     return clearedLabel
   }
 
+  startGame() {
+    this.isPlaying = true
+    // 卸掉 startButton
+    this.startButton.setActive(false).setVisible(false)
+    // reset state
+    this.scoreLabel.setScore(0)
+    this.livesLabel.setLives(gameConstants.startingLives)
+    this.timesCleared = 0
+    this.clearedLabel.setClearedNum(0)
+    // reset gameObjects
+    this.setBallVelocity()
+    this.resetBallPaddlePosition()
+  }
+
   setBallVelocity() {
     const multiplier = this.timesCleared > 0 ? Math.pow(physicsConstants.speedMultiplier, this.timesCleared) : 1
     this.ball.setVelocity(150 * multiplier, -150 * multiplier)
+  }
+
+  stopBallVelocity() {
+    this.ball.setVelocity(0, 0)
   }
 
   /**
@@ -222,8 +262,8 @@ export default class GameScene extends Phaser.Scene {
     if (down) {
       this.livesLabel.removeLife()
       if (this.livesLabel.isDead) {
-        alert('game over!')
-        window.location.reload()
+        this.resetLevel()
+        this.gameOver()
       } else {
         this.resetBallPaddlePosition()
         this.physics.pause()
@@ -305,5 +345,11 @@ export default class GameScene extends Phaser.Scene {
       brick.enableBody(true, brick.x, brick.y, true, true)
       brick.clearAlpha()
     })
+  }
+
+  gameOver() {
+    this.isPlaying = false
+    this.startButton.setActive(true).setVisible(true)
+    this.stopBallVelocity()
   }
 }

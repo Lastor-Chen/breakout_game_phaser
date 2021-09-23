@@ -19,6 +19,13 @@ class ScoreLabel extends Phaser.GameObjects.Text {
     return `Score: ${this.score}`
   }
 
+  /** @param {number} points */
+  setScore(points) {
+    this.score = points
+    this.setText(this.scoreText)
+  }
+
+  /** @param {number} points */
   add(points) {
     this.score += points
     this.setText(this.scoreText)
@@ -26,5 +33,3 @@ class ScoreLabel extends Phaser.GameObjects.Text {
 }
 
 export default ScoreLabel
-
-Phaser.GameObjects.Text

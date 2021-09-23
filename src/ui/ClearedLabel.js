@@ -19,6 +19,12 @@ class ClearedLabel extends Phaser.GameObjects.Text {
     return `Cleared: ${this.clearedNum}`
   }
 
+  /** @param {number} clearedNum */
+  setClearedNum(clearedNum) {
+    this.clearedNum = clearedNum
+    this.setText(this.clearedText)
+  }
+
   addClear() {
     this.clearedNum += 1
     this.setText(this.clearedText)
