@@ -46,12 +46,12 @@ export default class GameScene extends Phaser.Scene {
 
   preload() {
     this.canvas = this.sys.game.canvas
-    this.load.spritesheet(ballKey, '/img/wobble.png', { frameWidth: 20, frameHeight: 20 })
-    this.load.image(paddleKey, '/img/paddle.png')
-    this.load.image(brickKey, '/img/brick.png')
-    this.load.spritesheet(buttonKey, '/img/button.png', { frameWidth: 120, frameHeight: 40 })
-    this.load.audio(paddleHitKey, '/audio/114187__edgardedition__thud17.wav')
-    this.load.audio(brickHitKey, '/audio/478284__joao-janz__finger-tap-2-2.wav')
+    this.load.spritesheet(ballKey, 'img/wobble.png', { frameWidth: 20, frameHeight: 20 })
+    this.load.image(paddleKey, 'img/paddle.png')
+    this.load.image(brickKey, 'img/brick.png')
+    this.load.spritesheet(buttonKey, 'img/button.png', { frameWidth: 120, frameHeight: 40 })
+    this.load.audio(paddleHitKey, 'audio/114187__edgardedition__thud17.wav')
+    this.load.audio(brickHitKey, 'audio/478284__joao-janz__finger-tap-2-2.wav')
   }
 
   create() {

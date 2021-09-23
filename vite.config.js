@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import viteCompression from 'vite-plugin-compression'
 
 export default defineConfig({
-  base: '/',
+  base: '/breakout_game_phaser/',
   plugins: [viteCompression()], // 太大的包進行 gzip 壓縮
   build: {
     rollupOptions: {
