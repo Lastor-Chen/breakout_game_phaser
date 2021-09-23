@@ -7,6 +7,7 @@ import LivesLabel from '../ui/LivesLabel'
 import ClearedLabel from '../ui/ClearedLabel'
 
 const ballKey = 'ball'
+const ballAnimKey = 'wobble'
 const paddleKey = 'paddle'
 const brickKey = 'brick'
 const brickInfo = {
@@ -41,7 +42,10 @@ export default class GameScene extends Phaser.Scene {
 
   preload() {
     this.canvas = this.sys.game.canvas
-    this.load.image(ballKey, '/img/ball.png')
+    this.load.spritesheet(ballKey, '/img/wobble.png', {
+      frameWidth: 20,
+      frameHeight: 20,
+    })
     this.load.image(paddleKey, '/img/paddle.png')
     this.load.image(brickKey, '/img/brick.png')
     this.load.audio(paddleHitKey, '/audio/114187__edgardedition__thud17.wav')
@@ -100,6 +104,19 @@ export default class GameScene extends Phaser.Scene {
   createBall() {
     const ball = this.physics.add.sprite(this.canvas.width * 0.5, this.canvas.height - 25, ballKey)
     ball.setOrigin(0.5)
+
+    const wobbleFrames = [0, 1, 0, 2, 0, 1, 0, 2, 0]
+    const wobbleFrameKeys = wobbleFrames.map(frame => {
+      return {
+        key: ballKey,
+        frame: frame
+      }
+    })
+    this.anims.create({
+      key: ballAnimKey,
+      frames: wobbleFrameKeys,
+      frameRate: 24,
+    })
 
     // 設定能與 world bounds 發生碰撞, 彈力
     // 參數 4 的 onWorldBounds, 允許碰撞時 emit event
@@ -219,14 +236,26 @@ export default class GameScene extends Phaser.Scene {
   /** @type {ArcadePhysicsCallback} */
   ballHitPaddle = () => {
     this.sound.play(paddleHitKey)
+    this.ball.anims.play(ballAnimKey, true)
   }
 
   /** @type {ArcadePhysicsCallback} */
   ballHitBrick = (ball, obj2) => {
     /** @type {Phaser.Types.Physics.Arcade.SpriteWithDynamicBody} */
     const brick = (obj2)
-    brick.disableBody(true, true)
+    brick.disableBody(true, false)
     this.sound.play(brickHitKey)
+
+    // 淡出效果
+    this.tweens.add({
+      targets: brick,
+      alpha: { from: 1, to: 0 },
+      ease: 'Linear',
+      duration: gameConstants.brickVanishDelay,
+      repeat: 0,
+      yoyo: false, // mirror
+      onComplete: () => brick.disableBody(true, true),
+    })
 
     // 計分
     const multiplier = this.timesCleared > 0 ? gameConstants.clearMultiplier * this.timesCleared : 1

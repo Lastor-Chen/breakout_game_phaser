@@ -3,6 +3,7 @@ const gameConstants = {
   startingLives: 3,
   deathDelay: 800,
   clearMultiplier: 2, // 每 level 的得分增加量
+  brickVanishDelay: 300
 }
 
 export default gameConstants
